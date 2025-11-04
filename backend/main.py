@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from random import choice  # Import moved to top
 import os
 from dotenv import load_dotenv
 
@@ -33,6 +34,14 @@ app.add_middleware(
 class Message(BaseModel):
     text: str
 
+# Default responses initialized once at startup
+DEFAULT_RESPONSES = [
+    "Wach maber! To wach mane ma idwaro wacho? (Good point! What else would you like to say?)",
+    "Ok awinj maber. Inyalo loso wach mamoko? (I don't understand well. Can you say it differently?)",
+    "Nyisa gimoro. Ang'o ma itimo sani? (Tell me something. What are you doing now?)",
+    "Wach maber! To wach mane ma idwaro wacho? (Nice! What else would you like to discuss?)"
+]
+
 def dholuo_ai_response(text: str) -> str:
     """
     Enhanced rule-based Dholuo AI response function with more phrases and context
@@ -59,14 +68,7 @@ def dholuo_ai_response(text: str) -> str:
     
     # Default responses with translations
     else:
-        responses = [
-            "Wach maber! To wach mane ma idwaro wacho? (Good point! What else would you like to say?)",
-            "Ok awinj maber. Inyalo loso wach mamoko? (I don't understand well. Can you say it differently?)",
-            "Nyisa gimoro. Ang'o ma itimo sani? (Tell me something. What are you doing now?)",
-            "Wach maber! To wach mane ma idwaro wacho? (Nice! What else would you like to discuss?)"
-        ]
-        from random import choice
-        return choice(responses)
+        return choice(DEFAULT_RESPONSES)  # Using pre-initialized responses
 
 @app.get("/")
 async def root():
@@ -87,12 +89,25 @@ async def get_ai_response(message: Message):
 
 if __name__ == "__main__":
     # Run with: python main.py
-    # Using a different port (3000) to avoid common port conflicts.
+    import uvicorn
+    
+    # Fixed port (9000) to match frontend proxy configuration
+    PORT = 9000
+    HOST = "127.0.0.1"
+    
+    print(f"\nStarting Uvicorn directly via python main.py")
+    print(f"Server will be available at: http://{HOST}:{PORT}")
+    print(f"API endpoint: http://{HOST}:{PORT}/ai")
+    print(f"Health check: http://{HOST}:{PORT}/health\n")
+    
     try:
-        import uvicorn
-        print("Starting Uvicorn via python main.py on 127.0.0.1:3000")
-        uvicorn.run("main:app", host="127.0.0.1", port=3000, reload=True)
+        uvicorn.run(
+            "main:app",
+            host=HOST,
+            port=PORT,
+            reload=False,  # Disable reload for stability during testing
+            log_level="info"
+        )
     except Exception as exc:
-        # Print exception to help debugging if startup fails when run directly
-        print("Failed to start server via python main.py:", exc)
+        print(f"\nFailed to start server: {exc}")
         raise
